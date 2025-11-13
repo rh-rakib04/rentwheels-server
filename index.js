@@ -35,6 +35,7 @@ async function run() {
     await client.connect();
     const db = client.db("rent-wheel");
     const carsCollection = db.collection("cars");
+    const bookingsCollection = db.collection("booking");
     // ----------------> Cars Api
     app.get("/cars", async (req, res) => {
       const result = await carsCollection.find().toArray();
@@ -92,20 +93,54 @@ async function run() {
         result,
       });
     });
-    // ---------------->GET user's Cars Api
-    app.get("/my-cars", async (req, res) => {
-      const email = req.query.email;
-      const result = await carCollection.find({ addedBy: email }).toArray();
-      res.send({ result });
+    // ---------------->Bookings car Api Post
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
+    //  ---------------->Bookings car Api Get
+    app.get("/bookings/:email", async (req, res) => {
+      const { email } = req.params;
+      const bookings = await bookingsCollection
+        .find({ userEmail: email })
+        .toArray();
+      res.send({ result: bookings });
+    });
+    //  ---------------->Bookings car Api Delete
+    app.delete("/bookings/:id", async (req, res) => {
+      try {
+        const bookingId = req.params.id;
+        const booking = await bookingsCollection.findOne({
+          _id: new ObjectId(bookingId),
+        });
+        if (!booking) {
+          return res
+            .status(404)
+            .send({ success: false, message: "Booking not found" });
+        }
+        await bookingsCollection.deleteOne({ _id: new ObjectId(bookingId) });
+        await carsCollection.updateOne(
+          { _id: new ObjectId(booking.carId) },
+          { $set: { status: "Available" } }
+        );
+
+        res.send({ success: true, message: "Booking cancelled successfully!" });
+      } catch (error) {
+        console.error("Cancel error:", error);
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to cancel booking" });
+      }
     });
 
     await db.command({ ping: 1 });
-    console.log("✅ MongoDB connection successful!");
+    console.log(" MongoDB connection successful!");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err);
+    console.error(" MongoDB connection error:", err);
   }
 }
 
 run().catch(console.dir);
 
-app.listen(PORT, () => console.log(`🚗 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(` Server running on port ${PORT}`));

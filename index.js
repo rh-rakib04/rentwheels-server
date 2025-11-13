@@ -3,7 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const admin = require("firebase-admin");
-const serviceAccount = require("./serviceKey.json.json");
+const serviceAccount = require("./serviceKey.json");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -22,26 +22,6 @@ if (!admin.apps.length) {
   });
 }
 
-const verifyToken = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized: No token provided" });
-  }
-
-  const idToken = authHeader.split(" ")[1];
-
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
-    next();
-  } catch (error) {
-    console.error("Token verification failed:", error);
-    return res.status(401).json({ message: "Unauthorized: Invalid token" });
-  }
-};
-
-module.exports = verifyToken;
-
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.aczt7zj.mongodb.net/rent-wheel?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
@@ -58,7 +38,7 @@ app.get("/", (req, res) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("rent-wheel");
     const carsCollection = db.collection("cars");
     const bookingsCollection = db.collection("booking");
@@ -169,7 +149,7 @@ async function run() {
       }
     });
 
-    await db.command({ ping: 1 });
+    // await db.command({ ping: 1 });
     console.log(" MongoDB connection successful!");
   } catch (err) {
     console.error(" MongoDB connection error:", err);

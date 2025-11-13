@@ -87,7 +87,7 @@ async function run() {
       res.send(result);
     });
     // ---------------->Add Cars Api
-    app.post("/cars", verifyToken, async (req, res) => {
+    app.post("/cars", async (req, res) => {
       const data = req.body;
       const result = await carsCollection.insertOne(data);
       res.send({

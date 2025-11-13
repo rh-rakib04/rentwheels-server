@@ -2,27 +2,21 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const admin = require("firebase-admin");
-const serviceAccount = require("./serviceKey.json");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+// if (!admin.apps.length) {
+//   admin.initializeApp({
+//     credential: admin.credential.cert(
+//       require("../path/to/serviceAccountKey.json")
+//     ),
+//   });
+// }
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      require("../path/to/serviceAccountKey.json")
-    ),
-  });
-}
-
-const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.aczt7zj.mongodb.net/rent-wheel?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://rent-wheels:CqKOYb2cekAPEfh8@cluster0.aczt7zj.mongodb.net/rent-wheel?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   serverApi: {

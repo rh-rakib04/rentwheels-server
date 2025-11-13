@@ -40,7 +40,7 @@ async function run() {
       const result = await carsCollection.find().toArray();
       res.send(result);
     });
-
+    // ----------------> Cars Api
     app.get("/cars-details/:id", async (req, res) => {
       const { id } = req.params;
       const objectId = new ObjectId(id);
@@ -50,7 +50,7 @@ async function run() {
         result,
       });
     });
-
+    // ----------------> Cars Api
     app.get("/featured-cars", async (req, res) => {
       const result = await carsCollection
         .find()
@@ -59,7 +59,7 @@ async function run() {
         .toArray();
       res.send(result);
     });
-
+    // ---------------->Add Cars Api
     app.post("/cars", async (req, res) => {
       const data = req.body;
       const result = await carsCollection.insertOne(data);
@@ -68,7 +68,7 @@ async function run() {
         result,
       });
     });
-
+    // ---------------->Update Cars Api
     app.put("/cars/:id", async (req, res) => {
       const { id } = req.params;
       const data = req.body;
@@ -77,13 +77,26 @@ async function run() {
       const update = {
         $set: data,
       };
-
       const result = await carsCollection.updateOne(filter, update);
-
       res.send({
         success: true,
         result,
       });
+    });
+    // ---------------->Delete Cars Api
+    app.delete("/cars/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await carsCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send({
+        success: true,
+        result,
+      });
+    });
+    // ---------------->GET user's Cars Api
+    app.get("/my-cars", async (req, res) => {
+      const email = req.query.email;
+      const result = await carCollection.find({ addedBy: email }).toArray();
+      res.send({ result });
     });
 
     await db.command({ ping: 1 });

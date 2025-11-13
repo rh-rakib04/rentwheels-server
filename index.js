@@ -2,19 +2,45 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-
+const admin = require("firebase-admin");
+const serviceAccount = require("./serviceKey.json.json");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-console.log(
-  "user",
-  process.env.DB_USERNAME,
-  "password",
-  process.env.DB_PASSWORD
-);
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(
+      require("../path/to/serviceAccountKey.json")
+    ),
+  });
+}
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized: No token provided" });
+  }
+
+  const idToken = authHeader.split(" ")[1];
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return res.status(401).json({ message: "Unauthorized: Invalid token" });
+  }
+};
+
+module.exports = verifyToken;
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.aczt7zj.mongodb.net/rent-wheel?retryWrites=true&w=majority`;
 
@@ -61,7 +87,7 @@ async function run() {
       res.send(result);
     });
     // ---------------->Add Cars Api
-    app.post("/cars", async (req, res) => {
+    app.post("/cars", verifyToken, async (req, res) => {
       const data = req.body;
       const result = await carsCollection.insertOne(data);
       res.send({
@@ -106,6 +132,15 @@ async function run() {
         .find({ userEmail: email })
         .toArray();
       res.send({ result: bookings });
+    });
+    //  ---------------->Bookings car Api PATCH
+    app.patch("/cars/:id/status", async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = { $set: { status } };
+      const result = await carsCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
     //  ---------------->Bookings car Api Delete
     app.delete("/bookings/:id", async (req, res) => {
